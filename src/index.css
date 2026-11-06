@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html { scroll-behavior: smooth; }
+body { @apply bg-navy-950 text-slate-200 font-sans antialiased; }
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(60% 40% at 80% 0%, rgba(34,211,238,.12), transparent),
+              radial-gradient(50% 40% at 10% 20%, rgba(59,130,246,.14), transparent);
+}
+@layer components {
+  .card { @apply rounded-2xl border border-cyan-400/10 bg-navy-900/70 backdrop-blur transition duration-300; }
+  .card-hover { @apply hover:-translate-y-1 hover:border-cyan-400/40 hover:shadow-[0_0_30px_-8px_rgba(34,211,238,.4)]; }
+  .btn { @apply inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400; }
+  .btn-primary { @apply btn bg-gradient-to-l from-accent-cyan to-accent-blue text-navy-950 font-bold hover:brightness-110; }
+  .btn-ghost { @apply btn border border-cyan-400/20 text-slate-200 hover:bg-cyan-400/10; }
+  .input { @apply w-full rounded-xl border border-cyan-400/15 bg-navy-800 px-4 py-2.5 text-sm placeholder:text-slate-500 focus:border-cyan-400 focus:outline-none; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
