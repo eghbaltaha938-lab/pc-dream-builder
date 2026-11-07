@@ -52,7 +52,16 @@ function ItemCard({
             <p className="mb-1 text-xs text-slate-500">
               {item.manufacturer}
             </p>
-            <h3 className="font-bold leading-7">{item.model}</h3>
+
+            <h3 className="font-bold leading-7">
+              {item.model}
+            </h3>
+
+            {item.series && (
+              <p className="mt-1 text-xs text-accent-cyan">
+                {item.series}
+              </p>
+            )}
           </div>
 
           {item.isSample && <SampleBadge />}
@@ -64,10 +73,15 @@ function ItemCard({
 
             return (
               <div key={f.key} className="min-w-0">
-                <dt className="text-xs text-slate-500">{f.label}</dt>
+                <dt className="text-xs text-slate-500">
+                  {f.label}
+                </dt>
+
                 <dd
                   className={
-                    v === null ? 'text-slate-500' : 'text-slate-200'
+                    v === null
+                      ? 'text-slate-500'
+                      : 'text-slate-200'
                   }
                 >
                   {formatSpec(v, f.unit)}
@@ -83,8 +97,11 @@ function ItemCard({
           onClick={() => setOpen((o) => !o)}
         >
           {open ? 'مشخصات کمتر' : 'همهٔ مشخصات'}
+
           <ChevronDown
-            className={`h-4 w-4 transition ${open ? 'rotate-180' : ''}`}
+            className={`h-4 w-4 transition ${
+              open ? 'rotate-180' : ''
+            }`}
             aria-hidden
           />
         </button>
@@ -98,12 +115,17 @@ export default function CategoryPage() {
   const category = getCategoryBySlug(slug);
 
   const [items, setItems] = useState<HardwareItem[]>([]);
-  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>(
-    'loading'
-  );
+
+  const [status, setStatus] = useState<
+    'loading' | 'error' | 'ready'
+  >('loading');
+
   const [query, setQuery] = useState('');
+
   const [filterKey, setFilterKey] = useState('');
   const [filterVal, setFilterVal] = useState('');
+
+  const [seriesFilter, setSeriesFilter] = useState('');
 
   const load = useCallback(() => {
     if (!category) return;
@@ -122,9 +144,32 @@ export default function CategoryPage() {
     setQuery('');
     setFilterKey('');
     setFilterVal('');
+    setSeriesFilter('');
+
     load();
   }, [load]);
 
+  /*
+   * Series filter
+   *
+   * Only series that actually exist in the current category
+   * are displayed.
+   */
+  const seriesOptions = useMemo(() => {
+    const values = new Set<string>();
+
+    items.forEach((item) => {
+      if (item.series) {
+        values.add(item.series);
+      }
+    });
+
+    return [...values];
+  }, [items]);
+
+  /*
+   * Existing specification filters
+   */
   const filterOptions = useMemo(() => {
     if (!category) return [];
 
@@ -133,7 +178,10 @@ export default function CategoryPage() {
 
       items.forEach((i) => {
         const v = i.specs[f.key];
-        if (typeof v === 'string') vals.add(v);
+
+        if (typeof v === 'string') {
+          vals.add(v);
+        }
       });
 
       return vals.size > 1 && vals.size <= 6
@@ -142,17 +190,32 @@ export default function CategoryPage() {
     });
   }, [category, items]);
 
+  /*
+   * Final visible items
+   */
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
 
     return items.filter((i) => {
+      // Search
       if (
         q &&
-        !`${i.model} ${i.manufacturer}`.toLowerCase().includes(q)
+        !`${i.model} ${i.manufacturer}`
+          .toLowerCase()
+          .includes(q)
       ) {
         return false;
       }
 
+      // Series
+      if (
+        seriesFilter &&
+        i.series !== seriesFilter
+      ) {
+        return false;
+      }
+
+      // Specification
       if (
         filterKey &&
         filterVal &&
@@ -163,25 +226,44 @@ export default function CategoryPage() {
 
       return true;
     });
-  }, [items, query, filterKey, filterVal]);
+  }, [
+    items,
+    query,
+    seriesFilter,
+    filterKey,
+    filterVal,
+  ]);
 
   if (!category) return <NotFound />;
 
   const activeValues =
-    filterOptions.find((o) => o.field.key === filterKey)?.values ?? [];
+    filterOptions.find(
+      (o) => o.field.key === filterKey
+    )?.values ?? [];
 
-  const hasSampleItems = visible.some((item) => item.isSample);
+  const hasSampleItems = visible.some(
+    (item) => item.isSample
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
+
       <header className="mb-8 flex items-start gap-4">
         <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-cyan-400/10 text-accent-cyan">
-          <CategoryIcon name={category.icon} className="h-7 w-7" />
+          <CategoryIcon
+            name={category.icon}
+            className="h-7 w-7"
+          />
         </span>
 
         <div>
-          <h1 className="text-3xl font-extrabold">{category.title}</h1>
-          <p className="mt-2 text-slate-400">{category.description}</p>
+          <h1 className="text-3xl font-extrabold">
+            {category.title}
+          </h1>
+
+          <p className="mt-2 text-slate-400">
+            {category.description}
+          </p>
         </div>
       </header>
 
@@ -190,26 +272,61 @@ export default function CategoryPage() {
           role="note"
           className="mb-6 rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm leading-7 text-amber-200"
         >
-          رکوردهای نمونه، آموزشی هستند و نباید به‌عنوان مشخصات تأییدشده محصولات
-          واقعی در نظر گرفته شوند. مقدار «نامشخص» یعنی داده موجود نیست.
+          رکوردهای نمونه، آموزشی هستند و نباید به‌عنوان
+          مشخصات تأییدشده محصولات واقعی در نظر گرفته شوند.
+          مقدار «نامشخص» یعنی داده موجود نیست.
         </div>
       )}
 
-      <div className="mb-6 grid gap-3 md:grid-cols-[1fr_auto_auto]">
+      <div className="mb-6 grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
+
+        {/* Search */}
         <label className="relative block">
-          <span className="sr-only">جستجو</span>
+          <span className="sr-only">
+            جستجو
+          </span>
+
           <Search
             className="pointer-events-none absolute end-3 top-3 h-4 w-4 text-slate-500"
             aria-hidden
           />
+
           <input
             className="input pe-10"
             placeholder="جستجوی نام یا سازنده…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) =>
+              setQuery(e.target.value)
+            }
           />
         </label>
 
+        {/* Series filter */}
+        {seriesOptions.length > 0 && (
+          <select
+            className="input md:w-48"
+            aria-label="فیلتر سری"
+            value={seriesFilter}
+            onChange={(e) => {
+              setSeriesFilter(e.target.value);
+            }}
+          >
+            <option value="">
+              سری: همه
+            </option>
+
+            {seriesOptions.map((series) => (
+              <option
+                key={series}
+                value={series}
+              >
+                {series}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* Specification filter */}
         {filterOptions.length > 0 && (
           <>
             <select
@@ -221,10 +338,15 @@ export default function CategoryPage() {
                 setFilterVal('');
               }}
             >
-              <option value="">فیلتر: همه</option>
+              <option value="">
+                فیلتر: همه
+              </option>
 
               {filterOptions.map((o) => (
-                <option key={o.field.key} value={o.field.key}>
+                <option
+                  key={o.field.key}
+                  value={o.field.key}
+                >
                   {o.field.label}
                 </option>
               ))}
@@ -235,12 +357,19 @@ export default function CategoryPage() {
               aria-label="مقدار فیلتر"
               value={filterVal}
               disabled={!filterKey}
-              onChange={(e) => setFilterVal(e.target.value)}
+              onChange={(e) =>
+                setFilterVal(e.target.value)
+              }
             >
-              <option value="">همهٔ مقادیر</option>
+              <option value="">
+                همهٔ مقادیر
+              </option>
 
               {activeValues.map((v) => (
-                <option key={v} value={v}>
+                <option
+                  key={v}
+                  value={v}
+                >
                   {v}
                 </option>
               ))}
@@ -266,7 +395,11 @@ export default function CategoryPage() {
         ) : (
           <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {visible.map((i) => (
-              <ItemCard key={i.id} item={i} category={category} />
+              <ItemCard
+                key={i.id}
+                item={i}
+                category={category}
+              />
             ))}
           </ul>
         ))}

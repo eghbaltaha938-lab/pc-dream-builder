@@ -1,4 +1,3 @@
-
 export type CategoryId =
   | 'cpu'
   | 'gpu'
@@ -50,6 +49,9 @@ export interface HardwareItem {
 
   /** Product image path inside the public folder */
   image?: string;
+
+  /** Product family / generation */
+  series?: string;
 
   /** true = illustrative sample record */
   isSample: boolean;
